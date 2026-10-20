@@ -1,0 +1,29 @@
+
+# Python environment and cache
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Trained models and datasets
+*.pth
+*.pt
+*.onnx
+data/
+datasets/
+
+# Generated outputs
+outputs/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+Images/
