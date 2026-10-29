@@ -14,6 +14,14 @@ datasets/
 
 # Generated outputs
 outputs/
+neurotrace/outputs/
+
+# Local datasets, uploaded images, and generated case records
+neurotrace/Testing/
+neurotrace/offchain_store/
+neurotrace/ledger_local/ledger.json
+neurotrace/uploads_tmp/
+*.bak*
 
 # Local secrets
 .env

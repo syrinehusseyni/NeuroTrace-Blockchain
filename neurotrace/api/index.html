@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeuroTrace</title>
+<style>
+:root{--paper:#f5f6f4;--card:#fff;--ink:#17212b;--mute:#5b6770;--rule:#d5dad6;--viewer:#10161c;
+--ok:#1d7f6e;--okbg:#e3f2ee;--warn:#9a6a12;--warnbg:#fbf0d9;--bad:#b3261e;--badbg:#fbe4e2;--accent:#23527c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:600;margin:0}
+h1{font-size:26px}h2{font-size:18px;margin-bottom:10px}
+.mono{font-family:ui-monospace,Consolas,Menlo,monospace}
+header{display:flex;align-items:baseline;gap:16px;padding:18px 28px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+header p{margin:0;color:var(--mute)}
+.badges{margin-left:auto;display:flex;gap:8px}
+.badge{font-size:12px;padding:2px 9px;border-radius:99px;border:1px solid var(--rule);background:var(--card)}
+.badge.ok{background:var(--okbg);border-color:#b7dcd3;color:var(--ok)}
+.badge.warn{background:var(--warnbg);border-color:#ecd6a3;color:var(--warn)}
+.badge.bad{background:var(--badbg);border-color:#f0b9b4;color:var(--bad)}
+main{display:grid;grid-template-columns:300px 1fr;gap:24px;padding:24px 28px;max-width:1240px;margin:auto}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:16px;margin-bottom:18px}
+.drop{border:1.5px dashed var(--rule);border-radius:6px;padding:18px;text-align:center;color:var(--mute);cursor:pointer}
+.drop.over,.drop:focus-visible{border-color:var(--accent);outline:none;background:#eef3f8}
+button{font:inherit;padding:7px 14px;border-radius:5px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer}
+button.ghost{background:var(--card);color:var(--ink)}
+button.danger{background:var(--bad);border-color:var(--bad)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+ul.cases{list-style:none;margin:0;padding:0;max-height:340px;overflow:auto}
+ul.cases li{padding:7px 8px;border-radius:4px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;font-size:14px}
+ul.cases li:hover,ul.cases li.sel{background:#eef1ee}
+ul.cases small{color:var(--mute)}
+.viewer{background:var(--viewer);border-radius:6px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.viewer{grid-template-columns:1fr}}
+.viewer figure{margin:0;color:#aab6c0;font-size:13px}
+.viewer img{width:100%;display:block;border-radius:3px;background:#000;aspect-ratio:1/1;object-fit:contain}
+.viewer figcaption{padding-top:6px}
+.empty{color:var(--mute);padding:24px;text-align:center}
+.pred{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.pred .cls{font:600 30px Georgia,serif}
+.bar{height:8px;background:#e6e9e6;border-radius:4px;width:220px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.step{font-size:13px;padding:3px 10px;border-radius:4px;background:#eef1ee;color:var(--mute)}
+.step.run{background:var(--warnbg);color:var(--warn)}.step.done{background:var(--okbg);color:var(--ok)}
+.chain{list-style:none;margin:0;padding:0 0 0 18px;position:relative}
+.chain::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:var(--rule)}
+.chain li{position:relative;padding:6px 0 10px 18px}
+.chain li::before{content:"";position:absolute;left:-18px;top:11px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--mute)}
+.chain li.ok::before{background:var(--ok);border-color:var(--ok)}
+.chain li.bad::before{background:var(--bad);border-color:var(--bad)}
+.chain li.bad{background:var(--badbg);border-radius:4px}
+.chain b{font-weight:600}
+.chain .h{display:block;color:var(--mute);font-size:12px;word-break:break-all}
+.chain .h.diff{color:var(--bad)}
+.verdict{font:600 17px Georgia,serif;padding:10px 14px;border-radius:5px;margin:12px 0}
+.verdict.ok{background:var(--okbg);color:var(--ok)}.verdict.bad{background:var(--badbg);color:var(--bad)}
+.msg{color:var(--bad);font-size:14px;margin-top:8px}
+.disc{color:var(--mute);font-size:13px;margin-top:10px}
+.log{max-height:160px;overflow:auto;font-size:12.5px;color:var(--mute);margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>NeuroTrace</h1>
+  <p>MRI analysis with a verifiable provenance record</p>
+  <div class="badges"><span class="badge" id="bLedger">ledger: ...</span><span class="badge" id="bDemo" hidden>demo mode</span></div>
+</header>
+<main>
+<div class="panel" style="grid-column:1/-1;background:#fff4df;border-color:#ecd6a3">
+  <strong>Public educational demo:</strong> Upload public sample images only. Cases and uploaded images are visible to everyone using this demo and may be cleared at any time. This prototype is not for medical diagnosis.
+</div>
+<aside>
+  <div class="panel">
+    <h2>New case</h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an MRI image">Drop a .jpg or .png here, or click to choose</div>
+    <input type="file" id="file" accept=".jpg,.jpeg,.png" hidden>
+    <p id="chosen" class="disc" style="margin:8px 0"></p>
+    <div class="row"><button id="go" disabled>Analyse image</button></div>
+    <div class="steps" id="steps"></div>
+    <div class="log mono" id="log"></div>
+    <div class="msg" id="upMsg"></div>
+  </div>
+  <div class="panel">
+    <h2>Cases</h2>
+    <ul class="cases" id="cases"></ul>
+    <div class="row" style="margin-top:8px"><button class="ghost" id="refresh">Refresh</button></div>
+    <div class="row" style="margin-top:12px"><label class="disc" for="key">API key (only if the server asks for one)</label>
+    <input id="key" type="password" style="width:100%;padding:6px;border:1px solid var(--rule);border-radius:4px"></div>
+  </div>
+</aside>
+<section>
+  <div class="panel" id="resultPanel"><div class="empty">Choose a case in the list, or analyse a new image.</div></div>
+  <div class="panel"><h2>Images</h2>
+    <div class="viewer" id="viewer"><div class="empty" style="grid-column:1/-1">No case selected.</div></div></div>
+  <div class="panel"><h2>Blockchain record</h2>
+    <div class="row"><button id="verify" disabled>Verify integrity</button>
+      <button id="tamper" class="danger" hidden disabled>Tamper with the prediction file</button>
+      <button id="restore" class="ghost" hidden disabled>Restore the file</button></div>
+    <div id="verdict"></div>
+    <ul class="chain" id="chain"></ul>
+    <div class="msg" id="chainMsg"></div>
+  </div>
+</section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let current = null, picked = null, demo = false, verification = null, urls = [];
+
+function api(path, opts = {}) {
+  const k = $("key").value.trim();
+  opts.headers = Object.assign({}, opts.headers, k ? {"X-API-Key": k} : {});
+  return fetch(path, opts).then(async r => {
+    if (!r.ok) {
+      let d = ""; try { const j = await r.json(); d = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail); } catch (e) {}
+      throw new Error(r.status + (d ? " - " + d : ""));
+    }
+    return r;
+  });
+}
+const getJson = (p, o) => api(p, o).then(r => r.json());
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+const short = h => h ? h.slice(0, 12) + "..." + h.slice(-6) : "";
+
+async function init() {
+  try {
+    const h = await fetch("/health").then(r => r.json());
+    $("bLedger").textContent = "ledger: " + h.ledger;
+    $("bLedger").className = "badge " + (h.ledger === "fabric" ? "ok" : "warn");
+    demo = !!h.demo_mode;
+    $("bDemo").hidden = !demo; $("tamper").hidden = $("restore").hidden = !demo;
+  } catch (e) { $("bLedger").textContent = "API unreachable"; $("bLedger").className = "badge bad"; }
+  loadCases();
+}
+
+let casesSeq = 0;
+async function loadCases() {
+  const seq = ++casesSeq, ul = $("cases"), frag = document.createDocumentFragment();
+  try {
+    const list = await getJson("/cases");
+    if (!list.length) frag.appendChild(el("li", "", "No cases yet."));
+    for (const c of list) {
+      const li = el("li"); if (c.case_id === current) li.classList.add("sel");
+      li.appendChild(el("span", "mono", c.case_id));
+      const info = c.state === "done" ? (c.predicted_class || "no prediction") + " / " + (c.status_fr || c.status) : c.state;
+      li.appendChild(el("small", "", info));
+      li.onclick = () => openCase(c.case_id);
+      frag.appendChild(li);
+    }
+  } catch (e) { frag.appendChild(el("li", "", "Could not load cases: " + e.message)); }
+  if (seq === casesSeq) ul.replaceChildren(frag);   // only the latest call updates the list
+}
+
+/* ---------- upload ---------- */
+const drop = $("drop"), fileIn = $("file");
+drop.onclick = () => fileIn.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileIn.click(); } };
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); pick(e.dataTransfer.files[0]); };
+fileIn.onchange = () => pick(fileIn.files[0]);
+function pick(f) { picked = f || null; $("chosen").textContent = f ? f.name : ""; $("go").disabled = !f; }
+
+$("go").onclick = async () => {
+  $("upMsg").textContent = ""; $("go").disabled = true;
+  const fd = new FormData(); fd.append("file", picked);
+  try {
+    const r = await getJson("/cases", {method: "POST", body: fd});
+    current = r.case_id; clearCase(); await track(r.case_id); await openCase(r.case_id);
+  } catch (e) { $("upMsg").textContent = "Upload failed: " + e.message; }
+  $("go").disabled = !picked; loadCases();
+};
+
+async function track(id) {
+  const steps = new Map();
+  while (true) {
+    const s = await getJson("/cases/" + id + "/status");
+    if (s.current_agent) steps.set(s.current_agent, "run");
+    steps.forEach((v, k) => { if (k !== s.current_agent) steps.set(k, "done"); });
+    const box = $("steps"); box.textContent = "";
+    steps.forEach((v, k) => box.appendChild(el("span", "step " + v, k)));
+    const log = $("log"); log.textContent = "";
+    (s.log || []).slice(-6).forEach(en => {
+      const t = typeof en === "string" ? en : [en.agent, en.action || en.step || en.event, en.status || en.result || en.message].filter(Boolean).join(" ");
+      log.appendChild(el("div", "", t));
+    });
+    if (s.state === "done") return;
+    if (s.state === "error") throw new Error((s.error && (s.error.message || s.error.reason)) || "the analysis failed");
+    await new Promise(r => setTimeout(r, 1500));
+  }
+}
+
+/* ---------- case view ---------- */
+function clearCase() {
+  verification = null;
+  $("verdict").textContent = ""; $("chain").textContent = ""; $("chainMsg").textContent = "";
+  $("resultPanel").textContent = ""; $("resultPanel").appendChild(el("div", "empty", "Working..."));
+}
+
+async function openCase(id) {
+  current = id; verification = null; $("verdict").textContent = "";
+  ["verify", "tamper", "restore"].forEach(b => $(b).disabled = false);
+  loadCases(); showResult(id); showImages(id); showChain(id);
+}
+
+async function showResult(id) {
+  const p = $("resultPanel"); p.textContent = "";
+  p.appendChild(el("h2", "", id));
+  try {
+    const r = await getJson("/cases/" + id + "/result");
+    const row = el("div", "pred");
+    row.appendChild(el("div", "cls", r.predicted_class || "No prediction"));
+    if (r.confidence != null) {
+      const w = el("div"); w.appendChild(el("div", "", "Confidence " + (r.confidence * 100).toFixed(1) + " %"));
+      const b = el("div", "bar"), i = el("i"); i.style.width = (r.confidence * 100) + "%"; b.appendChild(i); w.appendChild(b); row.appendChild(w);
+    }
+    const cls = r.status === "ACCEPTED" ? "ok" : r.status === "REJECTED" ? "bad" : "warn";
+    row.appendChild(el("span", "badge " + cls, r.status_fr || r.status)); p.appendChild(row);
+    if ((r.reasons || []).length) p.appendChild(el("div", "disc", "Reasons: " + r.reasons.join(", ")));
+    p.appendChild(el("div", "disc", (r.model_version ? "Model " + r.model_version + ". " : "") + (r.disclaimer || "")));
+  } catch (e) { p.appendChild(el("div", "empty", "No result for this case (" + e.message + ")")); }
+}
+
+async function img(id, type) {
+  const r = await api("/cases/" + id + "/files/" + type);
+  const u = URL.createObjectURL(await r.blob()); urls.push(u); return u;
+}
+async function showImages(id) {
+  urls.forEach(URL.revokeObjectURL); urls = [];
+  const v = $("viewer"); v.textContent = "";
+  for (const [type, cap] of [["ORIGINAL_IMAGE", "Original MRI"], ["EXPLANATION", "Grad-CAM: regions that drove the prediction"]]) {
+    const f = el("figure");
+    try { const i = el("img"); i.alt = cap; i.src = await img(id, type); f.appendChild(i); }
+    catch (e) { f.appendChild(el("div", "empty", "Not available")); }
+    f.appendChild(el("figcaption", "", cap)); v.appendChild(f);
+  }
+}
+
+async function showChain(id) {
+  const ul = $("chain"); ul.textContent = ""; $("chainMsg").textContent = "";
+  try {
+    const chain = await getJson("/cases/" + id + "/chain");
+    if (!chain.length) { $("chainMsg").textContent = "Nothing recorded on the ledger for this case."; return; }
+    const vmap = {}; if (verification) verification.artifacts.forEach(a => vmap[a.artifact_id] = a);
+    for (const a of chain) {
+      const v = vmap[a.artifact_id], li = el("li", v ? (v.status === "INTEGRITY_VERIFIED" ? "ok" : "bad") : "");
+      const t = el("div"); t.appendChild(el("b", "", a.artifact_type));
+      if (v) t.appendChild(document.createTextNode("  " + v.status_fr));
+      li.appendChild(t);
+      li.appendChild(el("span", "h mono", "ledger hash " + a.sha256));
+      if (v && v.status !== "INTEGRITY_VERIFIED") li.appendChild(el("span", "h mono diff", "file hash   " + (v.actual_sha256 || "file missing")));
+      li.appendChild(el("span", "h mono", "tx " + short(a.tx_id) + (a.recorded_at ? "  recorded " + a.recorded_at : "")));
+      ul.appendChild(li);
+    }
+  } catch (e) { $("chainMsg").textContent = "Could not read the ledger: " + e.message; }
+}
+
+$("verify").onclick = async () => {
+  $("chainMsg").textContent = ""; $("verify").disabled = true;
+  try {
+    verification = await getJson("/cases/" + current + "/verify", {method: "POST"});
+    const ok = verification.overall === "INTEGRITY_VERIFIED";
+    const v = el("div", "verdict " + (ok ? "ok" : "bad"), verification.overall_fr + (ok ? "" : ": a file no longer matches the ledger"));
+    $("verdict").textContent = ""; $("verdict").appendChild(v); await showChain(current);
+  } catch (e) { $("chainMsg").textContent = "Verification failed: " + e.message; }
+  $("verify").disabled = false;
+};
+$("tamper").onclick = async () => act("tamper", "The prediction file was changed on disk. The ledger was not touched. Now verify.");
+$("restore").onclick = async () => act("restore", "The original file is back. Verify again.");
+async function act(kind, text) {
+  $("chainMsg").textContent = "";
+  try {
+    await getJson("/cases/" + current + "/demo/" + kind, {method: "POST"});
+    verification = null; $("verdict").textContent = ""; $("verdict").appendChild(el("div", "disc", text)); showChain(current);
+  } catch (e) { $("chainMsg").textContent = e.message; }
+}
+$("refresh").onclick = loadCases;
+init();
+</script>
+</body>
+</html>
