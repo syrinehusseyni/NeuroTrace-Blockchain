@@ -121,10 +121,6 @@ cd neurotrace
 
 The tests cover preprocessing, validation, the local pipeline and API, agent handling, metrics, integrity verification, and tamper detection. Run them in your environment before relying on a result.
 
-## Public demo and privacy
-
-The web application is an educational demonstration, not a production medical service. A public instance may expose uploaded images and case history to other visitors unless additional access controls and storage isolation are configured. Use public sample images only. The optional API key is shared by everyone who knows it, and demo mode allows case files to be deliberately modified.
-
 ## Limitations
 
 - Model confidence is not a measure of clinical certainty.
