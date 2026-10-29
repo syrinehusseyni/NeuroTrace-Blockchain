@@ -1,6 +1,5 @@
 """Central configuration for NeuroTrace (paths + device)."""
 from pathlib import Path
-import os
 import torch
 
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -36,7 +35,6 @@ MIN_MARGIN_TOP2 = 0.30     # top1 - top2 below -> Révision requise
 # PLACEHOLDERS: calibrate on your validation set (see calibrate step).
 
 # ---------------- Off-chain storage + local ledger ----------------
-OFFCHAIN_DIR = Path(os.environ.get("NEUROTRACE_OFFCHAIN_DIR", PROJECT_DIR / "offchain_store"))
-LEDGER_PATH = Path(os.environ.get(
-    "NEUROTRACE_LEDGER_PATH", PROJECT_DIR / "ledger_local" / "ledger.json"))
-UPLOAD_DIR = Path(os.environ.get("NEUROTRACE_UPLOAD_DIR", PROJECT_DIR / "uploads_tmp"))
+OFFCHAIN_DIR = PROJECT_DIR / "offchain_store"
+LEDGER_PATH = PROJECT_DIR / "ledger_local" / "ledger.json"  # stand-in until Fabric
+UPLOAD_DIR = PROJECT_DIR / "uploads_tmp"
